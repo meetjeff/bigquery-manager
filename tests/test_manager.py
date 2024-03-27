@@ -5,10 +5,13 @@ from google.cloud.bigquery import QueryJobConfig, ScalarQueryParameter
 from bigquery_manager import set_bigquery_client, BigQueryManager
 
 class TestBigQueryManager(unittest.TestCase):
+    @patch('bigquery_manager.client.google.auth.default')
     @patch('bigquery_manager.client.Client')
-    def setUp(self, mock_client):
+    def setUp(self, mock_client, mock_auth):
         mock_bq_client = MagicMock()
         mock_client.return_value = mock_bq_client
+        mock_auth.return_value = ('credentials', 'project')
+
         self.client = mock_bq_client
         bq_client = set_bigquery_client()
         self.bq_manager = BigQueryManager(bq_client)
@@ -20,7 +23,7 @@ class TestBigQueryManager(unittest.TestCase):
         params = [{"name": "param1", "type": "STRING", "value": "value1"}]
         
         def side_effect(*args, **kwargs):
-            return TestableQueryJobConfig(*args, **kwargs)
+            return MockQueryJobConfig(*args, **kwargs)
         mock_job_config.side_effect = side_effect
 
         result = self.bq_manager.query(
@@ -30,7 +33,7 @@ class TestBigQueryManager(unittest.TestCase):
         )
         self.client.query.assert_called_once_with(
             query=sql, 
-            job_config=TestableQueryJobConfig(
+            job_config=MockQueryJobConfig(
                 query_parameters=[
                     ScalarQueryParameter("param1", "STRING", "value1")
                 ],
@@ -49,13 +52,13 @@ class TestBigQueryManager(unittest.TestCase):
         ]
 
         def side_effect(*args, **kwargs):
-            return TestableQueryJobConfig(*args, **kwargs)
+            return MockQueryJobConfig(*args, **kwargs)
         mock_job_config.side_effect = side_effect
 
         result = self.bq_manager.invoke(sp, params)
         self.client.query.assert_called_once_with(
             query="CALL `dataset.stored_procedure`(?, ?);",
-            job_config=TestableQueryJobConfig(
+            job_config=MockQueryJobConfig(
                 query_parameters = [
                     ScalarQueryParameter(
                         None, 
@@ -83,13 +86,13 @@ class TestBigQueryManager(unittest.TestCase):
         ]
 
         def side_effect(*args, **kwargs):
-            return TestableQueryJobConfig(*args, **kwargs)
+            return MockQueryJobConfig(*args, **kwargs)
         mock_job_config.side_effect = side_effect
 
         result = self.bq_manager.select(table, select, params, write_disposition="WRITE_TRUNCATE")
         self.client.query.assert_called_once_with(
             query="SELECT select_column FROM `dataset.table` WHERE param1 = @param1 AND param2 = @param2;",
-            job_config=TestableQueryJobConfig(
+            job_config=MockQueryJobConfig(
                 query_parameters = [
                     ScalarQueryParameter(
                         "param1", 
@@ -142,7 +145,7 @@ class TestBigQueryManager(unittest.TestCase):
         self.assertIsNone(result_empty)
 
 
-class TestableQueryJobConfig(QueryJobConfig):
+class MockQueryJobConfig(QueryJobConfig):
     def __str__(self):
         return f"QueryJobConfig(query_parameters={self.query_parameters})"
     
@@ -150,6 +153,6 @@ class TestableQueryJobConfig(QueryJobConfig):
         return self.__str__()
     
     def __eq__(self, other):
-        if not isinstance(other, TestableQueryJobConfig):
+        if not isinstance(other, MockQueryJobConfig):
             return False
         return self.query_parameters == other.query_parameters
