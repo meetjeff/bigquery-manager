@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bigquery_manager"
+version = "1.0.0"
+authors = [
+  { name="Jeff Hsu", email="adf159776@gmail.com" },
+]
+description = "BigQueryManager"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "google-cloud-bigquery >= 3.12.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/meetjeff/bigquery-manager"
