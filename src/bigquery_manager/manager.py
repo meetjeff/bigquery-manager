@@ -79,13 +79,14 @@ class BigQueryManager:
         sql = self.__generate_select_sql(table, select, filters)
         return self.query(sql, filters, **job_configs)
     
-    def insert(self, destination_table: str, data):
+    def insert(self, destination_table: str, data, **kwargs):
         """Insert data into a BigQuery table."""
         if not data:
             return
         res = self.client.insert_rows(
             self.client.get_table(destination_table), 
-            data
+            data,
+            **kwargs
         )
         if res:
             raise RuntimeError(res)
