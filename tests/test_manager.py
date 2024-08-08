@@ -21,18 +21,18 @@ class TestBigQueryManager(unittest.TestCase):
         self.client.query.return_value.result.return_value = "result"
         sql = "SELECT * FROM dataset.table"
         params = [{"name": "param1", "type": "STRING", "value": "value1"}]
-        
+
         def side_effect(*args, **kwargs):
             return MockQueryJobConfig(*args, **kwargs)
         mock_job_config.side_effect = side_effect
 
         result = self.bq_manager.query(
-            sql, 
-            params, 
+            sql,
+            params,
             write_disposition="WRITE_TRUNCATE"
         )
         self.client.query.assert_called_once_with(
-            query=sql, 
+            query=sql,
             job_config=MockQueryJobConfig(
                 query_parameters=[
                     ScalarQueryParameter("param1", "STRING", "value1")
@@ -61,13 +61,13 @@ class TestBigQueryManager(unittest.TestCase):
             job_config=MockQueryJobConfig(
                 query_parameters = [
                     ScalarQueryParameter(
-                        None, 
-                        "STRING", 
+                        None,
+                        "STRING",
                         "value1"
                     ),
                     ScalarQueryParameter(
-                        None, 
-                        "FLOAT64", 
+                        None,
+                        "FLOAT64",
                         1.04
                     )
                 ]
@@ -95,13 +95,13 @@ class TestBigQueryManager(unittest.TestCase):
             job_config=MockQueryJobConfig(
                 query_parameters = [
                     ScalarQueryParameter(
-                        "param1", 
-                        "STRING", 
+                        "param1",
+                        "STRING",
                         "value1"
                     ),
                     ScalarQueryParameter(
-                        "param2", 
-                        "FLOAT64", 
+                        "param2",
+                        "FLOAT64",
                         1.04
                     )
                 ],
@@ -114,12 +114,18 @@ class TestBigQueryManager(unittest.TestCase):
         self.client.insert_rows.return_value = []
         destination_table = "dataset.table"
         data = [{"column1": "value1", "column2": "value2"}]
-        res = self.bq_manager.insert(destination_table, data)
+        res = self.bq_manager.insert(
+            destination_table,
+            data,
+            write_disposition="WRITE_TRUNCATE"
+        )
 
         self.client.get_table.assert_called_with(destination_table)
         self.client.insert_rows.assert_called_once_with(
-            self.client.get_table(destination_table), 
-            data
+            self.client.get_table(destination_table),
+            data,
+            None,
+            write_disposition="WRITE_TRUNCATE"
         )
         self.assertIsNone(res)
 
@@ -148,10 +154,10 @@ class TestBigQueryManager(unittest.TestCase):
 class MockQueryJobConfig(QueryJobConfig):
     def __str__(self):
         return f"QueryJobConfig(query_parameters={self.query_parameters})"
-    
+
     def __repr__(self):
         return self.__str__()
-    
+
     def __eq__(self, other):
         if not isinstance(other, MockQueryJobConfig):
             return False
